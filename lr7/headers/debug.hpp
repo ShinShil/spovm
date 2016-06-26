@@ -1,6 +1,6 @@
 #pragma once
 #include "main.h"
-#define DEBUG FALSE
+#define DEBUG TRUE
 class Debug {
 public:
 	static void debug(string line, string additional = "") {

@@ -1,27 +1,6 @@
 #include "fileSystemUser.h"
-/*
-string objectFileTypes[2] = {
-	"file", "directory"
-};
 
-string commands[2] = {
-	"mkdir",
-	"exit"
-};
 
-string errors[2] = {
-	"duplicate names - ",
-	"not found such command - "
-};
-*/
-const string FileCommands::commands[2]  = {
-	"mkdir",
-	"exit"
-};
-const string FileCommands::errors[2]  = {
-	"duplicate names - ",
-	"not found such command - "
-};
 FileSystemUser::FileSystemUser(string drive) {
 	this->drive = drive;
 	this->fileObject = new FileObject(getSystem(), "root", 5, '{', '}');
@@ -30,10 +9,26 @@ FileSystemUser::FileSystemUser(string drive) {
 	this->currPath += "\\";
 }
 string FileSystemUser::getCurrPath() {
-
+	return currPath;
 }
 string FileSystemUser::getCommand() {
+ 
 
+}
+void FileSystemUser::cdDir(string dir) {
+	currPath += dir;
+	currPath += "\\";
+}
+void FileSystemUser::cdUp() {
+	int i = currPath.length() - 2;
+	if(i<=drive.length() + 1 + 5) {
+		return;
+	}
+	else {
+		while(!StringService::isPathSeparator(currPath[i--]));
+		currPath.erase(i+1, currPath.length() - i);
+		currPath += "\\";
+	}
 }
 void FileSystemUser::start() {
 	FileCommands fc;
