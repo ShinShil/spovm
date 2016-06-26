@@ -21,10 +21,10 @@ void Process::create(string cmdline) {
 	if(pid == 0) { //if son process, replace with exec
 		int i = 0;
 		char* commandLine = const_cast<char*>(cmdline.c_str());
-		cout<<cmdline<<endl;
+		//cout<<cmdline<<endl;
 		while(commandLine[i++] != ' '){};
 		char* path = new char[i];
-
+        cout<<"Son pid: "<<getpid();
 		i = 0;
 		while(commandLine[i] != ' '){
 			path[i] = commandLine[i++];
@@ -35,12 +35,12 @@ void Process::create(string cmdline) {
 		}
 		char* argv = (commandLine + i);
 		//cout<<"argv: "<<argv<<endl;
-		//cout<<pid<<endl<<path<<endl<<argv<<endl;
+		//cout<<pid<<endl<<"PATH: " << path<<endl<<"ARGV: "<<argv<<endl;
 		execl(path," ", argv, NULL);
 		hProcess = getpid();
 		cout<<"HEY"<<pid<<endl;
 	}else {
-		wait(&status);
+		//wait(&status);
 	}
 #endif
 	state  = RESUME;
@@ -60,6 +60,7 @@ void Process::pause() {
 	SuspendThread(hMainThread);
 #endif
 #ifdef __linux__
+    cout << name << " pause" <<endl;
 	kill(hProcess, SIGTSTP);
 #endif
 	state = PAUSE;
@@ -105,4 +106,14 @@ HPROCESS Process::getHandle(string name) {
 	pclose(cmd);
 	return strtoul(line, NULL, 10);
 #endif
+}
+
+HPROCESS Process::getCurrProcessHandle() {
+#ifdef WIN32
+    return NULL;
+#endif
+
+#ifdef __linux__
+    return getpid();
+#endif    
 }

@@ -1,23 +1,18 @@
 #include "MainHeader.h"
 #include "Service.h"
 #include "Event.h"
-#include "Process.h"
 int main() {
 	char ch;
-	Event* event = Event::open("event");
-	cout<<"Input has been created"<<endl;
-	event->addSubscriber(Process::getHandle("main"));
+	Event* event = new Event("event");
 	while(true) {
-		cout<<"loop"<<endl;
+        cout<<"debug input"<<endl;
 		cin>>ch;
 		cin.clear();
 		string str = "";
 		str += ch;
 		Service::writeToFile(str, "event.txt");
-		//HANDLE event = OpenEvent(EVENT_ALL_ACCESS|EVENT_MODIFY_STATE, FALSE, "event");
 		event->set();
-		event->wait();
-		cout<<"succefull waiting"<<endl;
+        cout<<"debug AFTER set event in input"<<endl;
 	}
 	return 0;
 }

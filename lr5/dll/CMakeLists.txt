@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
-
 project(lib)
-
-set(SOURCE_DLL FileAIO.cpp)
-
-add_library(_dll shared ${SOURCE_DLL})
+set(VERSION_SCRIPT_FLAGS -Wl)
+set(SOURCE_DLL fileAsync.cpp)
+add_library(_dll SHARED ${SOURCE_DLL})
+set_target_properties(_dll PROPERTIES LINKER_LANGUAGE CXX)

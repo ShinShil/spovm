@@ -4,41 +4,20 @@
 #include "Event.h"
 
 int main() {
-	cout<<"HI"<<endl;
-	cout<<getpid()<<endl;
-	cout<<Process::getHandle("main")<<endl;
-	string testInput = Service::getCurrDir() + "/input ";
-	Event* event2 = new Event("event");
-
-	Process test;
-	test.create(testInput);
-	event2->wait();
-	return 0;
 	
 	string cmdline[10] = { "first", "second", "third", "fourth", "fifth", "sixth", "seventh",  "eighth", "nineth", "tenth"}; 
 	vector <Process*> prs;
 	Process input;
 	int loop = 1;
 	int i = -1;
-	string pathPrinter = Service::getCurrDir() + "\\printer";
-	/*HANDLE event = CreateEvent(NULL, TRUE, FALSE, "event"); //create event with usual permesinons, manual, start state unsignaled, name 'event'
-	HANDLE eventPrint = CreateEvent(NULL, TRUE, FALSE, "eventPrint"); //create event with usual permesinons, manual, start state unsignaled, name 'event'
-	*/
+	string pathPrinter = Service::getCurrDir() + "/printer";
+	
 
 	Event* event = new Event("event");
 	Event* eventPrint = new Event("eventPrint");
-	string pathInput = Service::getCurrDir() + "\\input";
-/*
-	Process::waitSignal(event, INFINITE);
-	input.pause();
-	string res;
-	Service::readFromFile(res, "event.txt");
-	cout<<"res1: "<<res<<endl;
-	input.resume();
-	Process::waitSignal(input.getHProcess(), INFINITE);
-	Service::readFromFile(res, "event.txt");
-	cout<<"res2: "<<res<<endl;
-*/
+    Event* temp = new Event("tmp");
+	string pathInput = Service::getCurrDir() + "/input";
+
 	//use events, because according to the task printers should'nt terminated
 	input.create(pathInput);
 	input.name = "input";
@@ -54,11 +33,15 @@ int main() {
 			prs[i]->resume();
 		}
 		event->wait();
+        cout<<"debug event release"<<endl;
 		if(i>=0 && prs[i]->getState() == RESUME) {
 			prs[i]->pause();
 		}
+        
 		Service::readFromFile(res, "event.txt");
 		input.pause();
+        cout<<"debug input has been paused"<<endl;
+        return 0;
 		if(res == "loop") {
 			Service::cycleIncrement(i, prs.size());
 		}else {
@@ -74,6 +57,7 @@ int main() {
 						cout<<i;
 						prs[i]->pause();
 					}
+                    cout<<"run process with name: "<<tmp<<endl;
 					break;
 				case '-': 
 					if(i<0) {

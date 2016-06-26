@@ -9,7 +9,14 @@ void Service::writeToFile(string src, string path) {
 void Service::readFromFile(string& dest, string path) {
 	ifstream in;
 	in.open(path.c_str());
-	in >> dest;
+    string tmp;
+    dest = "";
+    while(in.good()) {
+	   in >> tmp;
+       dest += tmp;
+       dest+="\n";
+    }
+    //cout<<"debug readFile: "<<path <<" "<<dest<<endl;
 	in.close();
 }
 string Service::getCurrDir() {

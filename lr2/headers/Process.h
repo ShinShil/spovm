@@ -27,6 +27,7 @@ public:
 	int getState();
 	static void waitSignal(HPROCESS hProcess, UINT time);
 	static HPROCESS getHandle(string name);
+    static HPROCESS getCurrProcessHandle();
 	void create(string cmdline);
 	void resume();
 	void pause();

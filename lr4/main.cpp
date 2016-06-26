@@ -1,6 +1,9 @@
-#include "MainHeader.h"
-#include "ns_thread.h"
-#include "Service.h"
+#include "main.h"
+#include "thread.hpp"
+#include "mutex.hpp"
+#include "service.hpp"
+
+int printDelay = 200;
 
 char strings[10][20] = {
 		"first thread\n\0",
@@ -15,89 +18,126 @@ char strings[10][20] = {
 		"tenth thread\n\0"
 	};
 
-int nextAddingThread = 0;
-vector<Ns_thread*> threads;
-int pauseFlag = 0;
-int currThread = -1;
-int exitFlag = 0;
+vector<Thread*> printers;
+vector<Thread*> actions; //add/remove, after input(), action saves, than wait for end of current thread execution and acts all of them 
+int activePrinter = -1;
+int infoPrinterLoop = 0;
 
-THREAD_START_ROUTINE_TYPE printOneThread(THREAD_START_ROUTINE_ARGSTYPE args) {
-	char* str = new char[512];
-	str = (char*)args;
-	//cout<<"Pause flag one: "<<pauseFlag<<endl;
+THREAD addPrinter(void* params);
+THREAD removePrinter(void* params);
+THREAD printerThread(void* params);
+THREAD printerLoop(void* params);
+THREAD input(void* params);
 
-	while(!exitFlag) {
-		if(pauseFlag) {
-			int i = 0;
-			//cout<<"In loop: "<< str[0] << " Pause flag: " << pauseFlag <<endl;
-			while(str[i]!='\0') {
-				cout<<str[i++];
-				sleep(1);
-			}
-			//cout<<"Pre pause = 0"<<endl;
-			pauseFlag = 0;
-		}
-	}
-	return 0;
-}
-
-THREAD_START_ROUTINE_TYPE printerThread(THREAD_START_ROUTINE_ARGSTYPE args) {
-	while(!exitFlag) {
-		//cout<<"Print: "<<exitFlag<<endl;
-		//cout<<"Size: "<<threads.size()<<endl;
-		if(threads.size() > 0) {
-			pauseFlag = 1;
-			//cout<<"Pause flag printer: "<<pauseFlag<<endl;
-			threads[currThread]->create((THREAD_START_ROUTINE_ARGSTYPE)strings[currThread], printOneThread);
-			while(pauseFlag);
-			threads[currThread]->destroy();
-			Service::cycleIncrement(currThread, threads.size());
-		}
-	}	
-	return 0;
-}
-
-THREAD_START_ROUTINE_TYPE inputThread(THREAD_START_ROUTINE_ARGSTYPE args) {
-	char ch;
-		cout<<"wait for input: ";
-	while(TRUE) {
-		cin>>ch;
-		switch(ch) {
-			case '+': {
-				Ns_thread* thread = new Ns_thread();
-				if(!nextAddingThread)
-					currThread = 0;
-				++nextAddingThread;
-				threads.push_back(thread);
-				break;
-			}
-			case '-':{
-				--nextAddingThread;
-				threads.pop_back();
-				break;
-			}
-			case 'q': {
-				exitFlag = 1;
-				if(nextAddingThread)
-					while(pauseFlag);			
-				while(threads.size()) {
-					threads[threads.size() - 1]->destroy();
-					threads.pop_back();
-				}
-				return 0;
-			}
-		}
-	}
-}
-
+Mutex mutex;
+Mutex addActionsMutex;
 int main() {
-
-	Ns_thread printer, input;
-	printer.create(NULL, printerThread);
-	input.create(NULL, inputThread);
-	input.wait();
-	input.destroy();
-	printer.destroy();
+	Thread printer(printerLoop);
+	printer.startAsync();
+	while(true) {
+		input(NULL);
+	}
+	cout<<"heeey"<<endl;
 	cout<<endl;
 	return 0;
+}
+
+
+THREAD addPrinter(void* params) {
+	//cout<<"add"<<endl;
+	printers.push_back(new Thread(printerThread, (void*)(Thread::packThreadData(strings[printers.size()]))));
+	return 0;
+}
+
+THREAD removePrinter(void* params) {
+	//cout<<"remove"<<endl;
+	if(printers.size() > 0) 
+		printers.pop_back();
+	return 0;
+}
+
+THREAD printerThread(void* params) {
+	mutex.wait();
+	string str = Thread::unpackThreadData(params);
+	for(int i = 0; i<str.length(); ++i) {
+		cout<<str[i];
+		sleep(1);
+	}
+	
+	mutex.unlock();
+	return 0;
+}
+
+
+//mutex - не даёт одновременно выполнять print и actions
+THREAD printerLoop(void* params) {
+	while(true) {
+
+		if(activePrinter < 0) {
+			if(!infoPrinterLoop) {
+				cout<<"[info] Waiting for input"<<endl;
+				infoPrinterLoop = 1;
+			}
+			if(actions.size()>0) {
+				mutex.wait();
+				for(int i = actions.size() - 1; i>=0; --i) {
+					actions[i]->startSync();
+					actions.pop_back();
+				}
+				if(printers.size() > 0)
+					activePrinter = 0;
+				mutex.unlock();
+			}
+		}else {
+			infoPrinterLoop = 0;
+			printers[activePrinter]->startSync();
+			if(actions.size() > 0) {
+				mutex.wait();
+				for(int i = 0; i<actions.size(); ++i) {
+					actions[i]->startSync();
+					actions.pop_back();
+				}
+				mutex.unlock();
+			}
+			if(printers.size() > 0)
+				Service::loopIncrement(activePrinter, printers.size());
+			else {
+				activePrinter = -1;
+				infoPrinterLoop = 0;
+			}
+		}
+	}
+	return 0;
+}
+
+//input can't executed while actions not ended;
+THREAD input(void* params) {
+	if(actions.size() > 0) {
+		mutex.wait();
+		cout<<"[info] Waiting for actions"<<endl;
+		mutex.unlock();
+	}
+	while(actions.size() > 0);
+	string str;
+	cin >> str;
+	reverse(str.begin(), str.end());
+	
+	for(int i = 0; i<str.length(); ++i) {
+		if(str[i] != '+' && str[i] != '-') {
+			return 0;
+		}
+	}
+	for(int i = 0; i<str.length(); ++i) {
+		if(str[i] == '+') {
+			if(printers.size() + 1 < 10) {
+				actions.push_back(new Thread(addPrinter));
+			} 
+		} 
+		if(str[i] == '-') {
+				actions.push_back(new Thread(removePrinter));
+		}
+	}
+	cout<<"actions hass been written"<<endl;
+	
+	return 0; 
 }

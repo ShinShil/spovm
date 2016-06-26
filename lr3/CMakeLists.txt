@@ -4,9 +4,16 @@ project(lr3)
 
 include_directories(headers)
 
-add_executable(client client.cpp)
+add_executable(main main.cpp)
+add_executable(process process.cpp)
 add_executable(server server.cpp)
+add_executable(client client.cpp)
 
-add_subdirectory(lib)
-target_link_libraries(client lib)
-target_link_libraries(server lib)
+if(UNIX AND NOT APPLE)
+	set(LINUX TRUE)
+endif()
+
+if(LINUX)
+	message(STATUS ">>> Linux")
+	TARGET_LINK_LIBRARIES(main semaphore)
+endif()

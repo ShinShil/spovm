@@ -1,26 +1,25 @@
-#include "MainHeader.h"
-#include "Semaphore.h"
-#include "Pipe.h"
-#include "Service.h"
+#include "main.h"
+#include "process.hpp"
+#include "pipe.hpp"
+#include "semaphore.hpp"
 
 int main() {
-
-	Service::setDebugName("server");
-	Semaphore sem;
-	Pipe pipe;
-	Service::debug("The server has been launched");
-
-	pipe.open("pipeName");
-	
-
-	string str;
-	Service::debug("Waiting for the enter string");
-	Service::debug("Enter the string");
-	cin>>str;
-
-	pipe.write(str);
-
-	sem.open("semName");
-	sem.signal();
+	string message = "";
+	Semaphore semaServer("serverSema");
+	Semaphore semaMessage("messageSema");
+	semaMessage.create();
+	Pipe pipe("lab3");
+	pipe.create();
+	semaServer.open();
+	semaServer.signal();
+	while(message != "exit") {
+		semaMessage.wait();
+		cout<<endl<<"[Server] Enter message for client: ";
+		cin>>message;
+		pipe.write(message);
+		cout<<endl<<"[Server] Waiting for client read";
+		semaMessage.signal();
+	}
+	cout<<endl;
 	return 0;
 }
