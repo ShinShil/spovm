@@ -1,7 +1,7 @@
 #pragma once
 #include "main.h"
 #include "fileObject.hpp"
-//at the end of the file one more include
+//!!! IN THIS HEADER TWO CLASSES circular reference
 #ifndef FILESYSTEMUSER 
 #define FILESYSTEMUSER
 class FileSystemUser {

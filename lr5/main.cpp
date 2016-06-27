@@ -9,11 +9,11 @@
 Mutex mutexAsyncIO;
 string inputFiles[FILE_INPUT_AMOUNT] = {"one.txt", "two.txt", "three.txt"};
 string outFile = "out.txt";
-
-string (*read) (string path);
 string buff = "test";
-void (*write)(string path, string src);
-void (*test)();
+
+string (*_read) (string path);
+void (*_write)(string path, string src);
+void (*_test)();
 
 THREAD reader(PARAMS_THREAD_TYPE);
 THREAD writer(PARAMS_THREAD_TYPE);
@@ -43,7 +43,7 @@ THREAD reader(PARAMS_THREAD_TYPE args) {
 	Debug::info("start read");
 	string path = Thread::unpackThreadData(args);
 	Debug::info(path);
-	buff = read(path);
+	buff = _read(path);
 	Debug::info("end read");
 	mutexAsyncIO.unlock();
 }
@@ -52,7 +52,7 @@ THREAD writer(PARAMS_THREAD_TYPE args) {
 	mutexAsyncIO.wait();
 	Debug::info("start write");
 	string path = Thread::unpackThreadData(args);
-	write(path, buff);
+	_write(path, buff);
 	mutexAsyncIO.unlock();
 }
 
@@ -62,18 +62,18 @@ HDLL loadFunctions() {
 		cout<<"fail to load dll";
 		return 0;
     }
-	test = (void (*)())DllLoader::getFunc(dll, "test");
-	read = (string (*)(string))DllLoader::getFunc(dll, "read");
-	write = (void (*)(string,string))DllLoader::getFunc(dll,"write");
-	if(!test) {
+	_test = (void (*)())DllLoader::getFunc(dll, "test");
+	_read = (string (*)(string))DllLoader::getFunc(dll, "read");
+	_write = (void (*)(string,string))DllLoader::getFunc(dll,"write");
+	if(!_test) {
 		cout<<"fail to load func: test";
 		return 0;
 	}
-	if(!read) {
+	if(!_read) {
 		cout<<"fail to load func: read";
 		return 0;
 	}
-	if(!write) {
+	if(!_write) {
 		cout<<"fail to load func: write";
 		return 0;
 	}

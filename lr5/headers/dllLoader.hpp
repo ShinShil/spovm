@@ -24,8 +24,8 @@
 	class DllLoader {
 	public:
 		static HDLL load(string name) {
-			name += ".dll";
-			return dlopen(name.c_str(), RTRD_NOW);
+			name += ".so";
+			return dlopen(name.c_str(), RTLD_LAZY);
 		}
 		static DLL_FUNC_TYPE getFunc(HDLL dll, string name) {
 			return dlsym(dll, name.c_str());

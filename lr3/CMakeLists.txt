@@ -15,5 +15,6 @@ endif()
 
 if(LINUX)
 	message(STATUS ">>> Linux")
-	TARGET_LINK_LIBRARIES(main semaphore)
+	TARGET_LINK_LIBRARIES(server semaphore)
+	TARGET_LINK_LIBRARIES(client semaphore)
 endif()

@@ -192,6 +192,7 @@ public:
 	}
 	void addObj(string name) {
 		setEndPos();
+		++pos;
 		content.insert(pos,name);
 		pos = BEGIN_POS;
 	}

@@ -2,7 +2,7 @@
 
 	#if defined(WIN32)
 		#define MAX_READ 256
-		string read(string path) {
+		string _read(string path) {
 			DWORD readenByte;
 			int t;
 			char pBuffer[MAX_READ] = {0};
@@ -29,7 +29,7 @@
 			CloseHandle(hFile);
 			return str;
 		}
-		void write(string path, string src) {
+		void _write(string path, string src) {
 			DWORD readenByte;
 			Debug::debug(src);
 			char* buffer = new char[src.length() + 1];
@@ -53,11 +53,98 @@
 			CloseHandle(hFile);
 			delete[] buffer;
 		}
-		void test() {
+		void _test() {
 			cout<<"Hello from dll"<<endl;
 		}
 	#elif defined(__linux__)
+		#include <aio.h>
+		#define BUF_SIZE 111
+		string _read(string path) {
+			char buff[BUF_SIZE];
+			int fd = open(path.c_str(), O_RDWR | O_EXCL, S_IRUSR | S_IWUSR);
+			if(fd == -1) {
+				string error = "fail to open: ";
+				error += path;
+				error += ", fileAsync.cpp::read(string) - ";
+				error += strerror(errno);
+				Debug::error(error);
+				return "";
+			}
+			struct aiocb aio;
+			aio.aio_fildes = fd;
+			aio.aio_buf = buff;
+			aio.aio_nbytes = BUF_SIZE;
+			aio.aio_lio_opcode = LIO_WRITE;
 
+			if(aio_read(&aio) == -1) {
+				string error = "fileAsync.cpp::aio_read()::==-1 - ";
+				error += strerror(errno); 
+				Debug::error(error);
+				return "";
+			}
+			int err;
+			int ret;
+			while(aio_read(&aio) == EINPROGRESS);
+
+			err = aio_error(&aio);
+			if(!err) {
+				string error = "fileAsync.cpp::aio_read()::!err - ";
+				error += strerror(errno); 
+				Debug::error(error);
+				return "";
+			}
+			if(ret!=BUF_SIZE) {
+				string error = "fileAsync.cpp::aio_read()::ret!=BUF_SIZE - ";
+				error += strerror(errno); 
+				Debug::error(error);
+				return "";
+			}
+			string res = buff;
+			return res;
+		}
+		void _write(string path, string src) {
+			char buff[BUF_SIZE];
+			strcpy(buff, src.c_str());
+			int fd = open(path.c_str(), O_RDWR | O_EXCL | O_APPEND, S_IRUSR | S_IWUSR);
+			if(fd == -1) {
+				string error = "fail to open: ";
+				error += path;
+				error += ", fileAsync.cpp::write(string) - ";
+				error += strerror(errno);
+				Debug::error(error);
+				return;
+			}
+			struct aiocb aio;
+			aio.aio_fildes = fd;
+			aio.aio_buf = buff;
+			aio.aio_nbytes = BUF_SIZE;
+
+			if(aio_write(&aio) == -1) {
+				string error = "fileAsync.cpp::aio_write()::==-1 - ";
+				error += strerror(errno); 
+				Debug::error(error);
+				return;
+			}
+			int err;
+			int ret;
+			while(aio_write(&aio) == EINPROGRESS);
+			err = aio_error(&aio);
+			if(!err) {
+				string error = "fileAsync.cpp::aio_write()::!err - ";
+				error += strerror(errno); 
+				Debug::error(error);
+				return;
+			}
+			if(ret!=BUF_SIZE) {
+				string error = "fileAsync.cpp::aio_write()::ret!=BUF_SIZE - ";
+				error += strerror(errno); 
+				Debug::error(error);
+				return;
+			}
+		}
+		void _test() {
+			cout<<"test"<<endl;
+		}
 	#else
 		#error Unsupporting system
 	#endif
